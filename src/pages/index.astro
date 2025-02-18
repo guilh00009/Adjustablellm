@@ -193,9 +193,9 @@ import Layout from '../layouts/Layout.astro';
 		// Initialize system prompt with thinking enabled
 		const systemPromptInput = document.getElementById('systemPrompt') as HTMLTextAreaElement;
 		if (systemPromptInput) {
-			let basePrompt = store.systemPrompt || 'You are a helpful AI assistant. You need to use tags, and think.';
-			systemPromptInput.value = basePrompt;
-			useLLMStore.getState().setSystemPrompt(basePrompt);
+			const initialPrompt = "You are a helpful AI assistant. You need to use tags, and think.";
+			systemPromptInput.value = initialPrompt;
+			useLLMStore.getState().setSystemPrompt(initialPrompt);
 			
 			// Update system prompt but maintain thinking instruction
 			systemPromptInput.addEventListener('input', (e) => {
@@ -523,9 +523,30 @@ import Layout from '../layouts/Layout.astro';
 	<button
 		id="themeToggle"
 		class="glass rounded-lg px-4 py-2 transition-all duration-300 flex items-center gap-2 text-[var(--text-color)]"
+		onclick="toggleTheme()"
 	>
 		<span class="theme-dark">🌙</span>
 		<span class="theme-light">☀️</span>
 		<span class="theme-text hidden sm:inline">Dark Mode</span>
 	</button>
 </div>
+
+<script>
+	// Theme toggle function
+	function toggleTheme() {
+		const html = document.documentElement;
+		const currentTheme = html.getAttribute('data-theme');
+		const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+		html.setAttribute('data-theme', newTheme);
+		localStorage.setItem('theme', newTheme);
+		
+		// Update button text
+		const themeText = document.querySelector('.theme-text');
+		if (themeText) {
+			themeText.textContent = newTheme === 'dark' ? 'Dark Mode' : 'Light Mode';
+		}
+	}
+	
+	// Make toggleTheme available globally
+	window.toggleTheme = toggleTheme;
+</script>
