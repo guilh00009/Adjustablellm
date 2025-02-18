@@ -1,0 +1,113 @@
+---
+interface Props {
+	title: string;
+}
+
+const { title } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en" data-theme="dark">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="description" content="LLM Configuration Interface" />
+		<meta name="viewport" content="width=device-width" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<meta name="generator" content={Astro.generator} />
+		<title>{title}</title>
+	</head>
+	<body class="min-h-screen transition-colors duration-300">
+		<div class="fixed inset-0 transition-colors duration-300 -z-10"></div>
+		<slot />
+	</body>
+</html>
+
+<style is:global>
+	:root {
+		--glass-border-dark: rgba(255, 255, 255, 0.1);
+		--glass-bg-dark: rgba(23, 25, 35, 0.3);
+		--glass-border-light: rgba(0, 0, 0, 0.1);
+		--glass-bg-light: rgba(255, 255, 255, 0.3);
+	}
+	
+	[data-theme="dark"] {
+		--glass-border: var(--glass-border-dark);
+		--glass-bg: var(--glass-bg-dark);
+		--text-color: rgba(255, 255, 255, 0.9);
+		--text-color-muted: rgba(255, 255, 255, 0.3);
+		--thumb-color: white;
+		--function-call-bg: rgba(147, 51, 234, 0.2);
+		background: linear-gradient(to bottom right, rgb(17, 24, 39), rgb(88, 28, 135), rgb(76, 29, 149));
+	}
+
+	[data-theme="light"] {
+		--glass-border: var(--glass-border-light);
+		--glass-bg: var(--glass-bg-light);
+		--text-color: rgba(0, 0, 0, 0.9);
+		--text-color-muted: rgba(0, 0, 0, 0.3);
+		--thumb-color: #4a5568;
+		--function-call-bg: rgba(147, 51, 234, 0.1);
+		background: linear-gradient(to bottom right, rgb(219, 234, 254), rgb(233, 213, 255), rgb(252, 231, 243));
+	}
+
+	[data-theme="dark"] .theme-dark {
+		display: block;
+	}
+
+	[data-theme="dark"] .theme-light {
+		display: none;
+	}
+
+	[data-theme="light"] .theme-dark {
+		display: none;
+	}
+
+	[data-theme="light"] .theme-light {
+		display: block;
+	}
+	
+	.glass {
+		background: var(--glass-bg);
+		border: 1px solid var(--glass-border);
+		backdrop-filter: blur(10px);
+		-webkit-backdrop-filter: blur(10px);
+	}
+
+	.glass-input {
+		background: var(--glass-bg);
+		border: 1px solid var(--glass-border);
+		color: var(--text-color);
+	}
+
+	.glass-input::placeholder {
+		color: var(--text-color-muted);
+	}
+
+	input[type="range"] {
+		-webkit-appearance: none;
+		height: 6px;
+		background: var(--glass-bg);
+		border-radius: 3px;
+		border: 1px solid var(--glass-border);
+	}
+
+	input[type="range"]::-webkit-slider-thumb {
+		-webkit-appearance: none;
+		width: 20px;
+		height: 20px;
+		background: var(--thumb-color);
+		border-radius: 50%;
+		cursor: pointer;
+		transition: all 0.2s ease;
+	}
+
+	input[type="range"]::-webkit-slider-thumb:hover {
+		transform: scale(1.1);
+	}
+</style>
+
+<script>
+	// Initialize theme from localStorage or default to dark
+	const theme = localStorage.getItem('theme') || 'dark';
+	document.documentElement.setAttribute('data-theme', theme);
+</script>

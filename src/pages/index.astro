@@ -1,0 +1,531 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
+// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+---
+
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+	<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+	<meta name="generator" content={Astro.generator} />
+	<title>Adjustable LLM</title>
+
+	<!-- PWA Meta Tags -->
+	<meta name="apple-mobile-web-app-capable" content="yes" />
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+	<meta name="apple-mobile-web-app-title" content="Adjustable LLM" />
+	
+	<!-- iOS Icons -->
+	<link rel="apple-touch-icon" href="/images/ai-orb-192.png" />
+	<link rel="apple-touch-icon" sizes="152x152" href="/images/ai-orb-152.png" />
+	<link rel="apple-touch-icon" sizes="180x180" href="/images/ai-orb-180.png" />
+	<link rel="apple-touch-icon" sizes="167x167" href="/images/ai-orb-167.png" />
+
+	<!-- Splash Screens -->
+	<link rel="apple-touch-startup-image" media="screen and (device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3)" href="/splash/iPhone_14_Pro_Max_landscape.png" />
+	<link rel="apple-touch-startup-image" media="screen and (device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3)" href="/splash/iPhone_14_Pro_landscape.png" />
+	<link rel="apple-touch-startup-image" media="screen and (device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3)" href="/splash/iPhone_14_Plus__iPhone_13_Pro_Max__iPhone_12_Pro_Max_landscape.png" />
+
+	<!-- Web App Manifest -->
+	<link rel="manifest" href="/manifest.json" />
+
+	<!-- Theme Color -->
+	<meta name="theme-color" content="#000000" />
+</head>
+
+<Layout title="LLM Configuration">
+	<main class="min-h-screen py-8">
+		<div class="container mx-auto">
+			<div class="grid grid-cols-1 lg:grid-cols-[400px_1fr] gap-8">
+				<!-- Configuration Panel -->
+				<div class="space-y-8">
+					<div class="glass rounded-2xl shadow-lg p-4 lg:p-8">
+						<h2 class="text-2xl font-semibold mb-6 text-[var(--text-color)]">Configuration</h2>
+						<div class="space-y-6">
+							<div>
+								<label class="block text-sm font-medium mb-2 text-[var(--text-color-muted)]">System Prompt</label>
+								<textarea 
+									id="systemPrompt" 
+									class="w-full glass-input rounded-lg p-2 h-32 resize-y" 
+									placeholder="Enter system prompt..."
+								></textarea>
+							</div>
+
+							<div>
+								<label class="block text-sm font-medium mb-2 text-[var(--text-color-muted)]">Temperature</label>
+								<div class="flex items-center gap-4">
+									<input type="range" min="0" max="1" step="0.1" class="flex-1" id="temperature" />
+									<span id="temperatureValue" class="text-lg font-medium min-w-[3ch] text-center text-[var(--text-color)]"></span>
+								</div>
+							</div>
+							
+							<div>
+								<label class="block text-sm font-medium mb-2 text-[var(--text-color-muted)]">Max Tokens</label>
+								<input type="number" min="1" max="4096" value="1000" class="w-full glass-input rounded-lg p-2" id="maxTokens" />
+							</div>
+
+							<div class="flex items-center justify-between">
+								<label class="text-sm font-medium text-[var(--text-color-muted)]">Thinking Mode</label>
+								<div class="glass px-4 py-2 rounded-lg bg-[var(--function-call-bg)] text-[var(--text-color)]">
+									Always On
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<div class="mt-4 lg:mt-8">
+						<h3 class="text-xl font-semibold mb-4 text-[var(--text-color)]">Functions</h3>
+						<div id="functionsList" class="space-y-3"></div>
+						<div class="flex flex-col sm:flex-row gap-3 mt-4">
+							<button id="addFunction" class="flex-1 glass hover:bg-[var(--glass-bg)] transition-all duration-300 px-6 py-2 rounded-lg text-[var(--text-color)]">
+								Add Function
+							</button>
+							<button id="clearFunctions" class="glass hover:bg-[var(--glass-bg)] transition-all duration-300 px-4 py-2 rounded-lg text-[var(--text-color-muted)] hover:text-[var(--text-color)]">
+								Clear All
+							</button>
+						</div>
+					</div>
+				</div>
+
+				<!-- Chat Interface -->
+				<div class="glass rounded-2xl shadow-lg p-4 lg:p-8">
+					<h2 class="text-2xl font-semibold mb-6 text-[var(--text-color)]">Chat</h2>
+					<div id="chatMessages" class="h-[calc(100vh-20rem)] overflow-y-auto mb-6 space-y-4 glass rounded-lg p-4"></div>
+					
+					<div class="flex flex-col sm:flex-row gap-3">
+						<input type="text" id="messageInput" class="flex-1 glass-input rounded-lg p-3" placeholder="Type your message..." />
+						<div class="flex gap-2">
+							<button id="sendMessage" class="flex-1 sm:flex-none glass hover:bg-[var(--glass-bg)] transition-all duration-300 px-6 py-2 rounded-lg text-[var(--text-color)]">
+								Send
+							</button>
+							<button id="clearHistory" class="flex-1 sm:flex-none glass hover:bg-[var(--glass-bg)] transition-all duration-300 px-4 py-2 rounded-lg text-[var(--text-color)]">
+								Clear
+							</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</main>
+</Layout>
+
+<script>
+	import { useLLMStore } from '../store/llmStore';
+	import { sendMessage } from '../lib/api';
+
+	// Function to create and append the function form
+	function createFunctionForm() {
+		// Check if a form already exists
+		const existingForm = document.querySelector('.function-form-overlay');
+		if (existingForm) {
+			return existingForm;
+		}
+
+		const functionForm = document.createElement('div');
+		functionForm.className = 'fixed inset-0 bg-black/70 flex items-center justify-center z-50 function-form-overlay';
+		functionForm.innerHTML = `
+			<div class="glass rounded-xl p-6 max-w-md w-full mx-4">
+				<h3 class="text-xl font-semibold mb-4 text-[var(--text-color)]">Add Function</h3>
+				<form class="space-y-4" onsubmit="return false;">
+					<div>
+						<label class="block text-sm font-medium mb-2 text-[var(--text-color-muted)]">Function Name</label>
+						<input type="text" id="functionName" class="w-full glass-input rounded-lg p-2" placeholder="Enter function name">
+					</div>
+					<div>
+						<label class="block text-sm font-medium mb-2 text-[var(--text-color-muted)]">Description</label>
+						<textarea id="functionDescription" class="w-full glass-input rounded-lg p-2 h-24" placeholder="Enter function description"></textarea>
+					</div>
+					<div>
+						<label class="block text-sm font-medium mb-2 text-[var(--text-color-muted)]">Parameters (JSON)</label>
+						<textarea id="functionParameters" class="w-full glass-input rounded-lg p-2 h-32" placeholder='{"type": "object", "properties": {...}}'></textarea>
+					</div>
+					<div class="flex gap-3 mt-6">
+						<button type="submit" id="saveFunctionBtn" class="flex-1 glass hover:bg-[var(--glass-bg)] transition-all duration-300 px-4 py-2 rounded-lg text-[var(--text-color)]">Save</button>
+						<button type="button" id="cancelFunctionBtn" class="flex-1 glass hover:bg-[var(--glass-bg)] transition-all duration-300 px-4 py-2 rounded-lg text-[var(--text-color)]">Cancel</button>
+					</div>
+				</form>
+			</div>
+		`;
+		document.body.appendChild(functionForm);
+
+		// Prevent Enter key from creating multiple forms
+		functionForm.addEventListener('keydown', (e) => {
+			if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
+				e.preventDefault();
+				document.getElementById('saveFunctionBtn')?.click();
+			}
+		});
+
+		return functionForm;
+	}
+
+	function initializeApp() {
+		// Set think mode to always on
+		const isThinkModeEnabled = true;
+		let thinkStartTime = 0;
+
+		// Initialize elements
+		const temperatureInput = document.getElementById('temperature') as HTMLInputElement;
+		const temperatureValue = document.getElementById('temperatureValue');
+		const maxTokensInput = document.getElementById('maxTokens') as HTMLInputElement;
+		const messageInput = document.getElementById('messageInput') as HTMLInputElement;
+		const chatMessages = document.getElementById('chatMessages');
+		const functionsList = document.getElementById('functionsList');
+		const sendButton = document.getElementById('sendMessage');
+		const clearButton = document.getElementById('clearHistory');
+		const addFunctionButton = document.getElementById('addFunction');
+		const themeToggle = document.getElementById('themeToggle');
+
+		if (!temperatureInput || !temperatureValue || !maxTokensInput || !messageInput || 
+			!chatMessages || !functionsList || !sendButton || !clearButton || !addFunctionButton || !themeToggle) {
+			console.error('Required elements not found');
+			return;
+		}
+
+		// Initialize store values
+		const store = useLLMStore.getState();
+		temperatureInput.value = store.temperature.toString();
+		maxTokensInput.value = store.maxTokens.toString();
+		temperatureValue.textContent = store.temperature.toString();
+		
+		// Initialize system prompt with thinking enabled
+		const systemPromptInput = document.getElementById('systemPrompt') as HTMLTextAreaElement;
+		if (systemPromptInput) {
+			let basePrompt = store.systemPrompt || 'You are a helpful AI assistant. You need to use tags, and think.';
+			systemPromptInput.value = basePrompt;
+			useLLMStore.getState().setSystemPrompt(basePrompt);
+			
+			// Update system prompt but maintain thinking instruction
+			systemPromptInput.addEventListener('input', (e) => {
+				let value = (e.target as HTMLTextAreaElement).value;
+				if (!value.includes('You need to use tags, and think.')) {
+					value += ' You need to use tags, and think.';
+				}
+				useLLMStore.getState().setSystemPrompt(value);
+			});
+		}
+
+		// Update temperature display
+		temperatureInput.addEventListener('input', (e) => {
+			const value = (e.target as HTMLInputElement).value;
+			temperatureValue.textContent = value;
+			useLLMStore.getState().setTemperature(parseFloat(value));
+		});
+
+		// Update max tokens
+		maxTokensInput.addEventListener('input', (e) => {
+			const value = (e.target as HTMLInputElement).value;
+			useLLMStore.getState().setMaxTokens(parseInt(value));
+		});
+
+		// Handle sending messages
+		async function handleSendMessage() {
+			const content = messageInput.value.trim();
+			if (!content) return;
+
+			const store = useLLMStore.getState();
+			
+			// Create messages array with system message and full conversation history
+			let messages = [{
+				role: 'system',
+				content: store.systemPrompt || 'You are a helpful AI assistant. You need to use tags, and think.'
+			}];
+
+			// Add all previous messages from history
+			// Only send the raw messages to the AI, not the formatted display versions
+			messages = messages.concat(store.messages.map(msg => {
+				if (msg.role === 'assistant' && msg.content) {
+					// Extract only the thinking tags and final response for assistant messages
+					const thinkMatch = msg.content.match(/<think>(.*?)<\/think>/s);
+					const thinking = thinkMatch ? `<think>${thinkMatch[1]}</think>` : '';
+					const finalResponse = msg.content.replace(/<think>.*?<\/think>/s, '').trim();
+					return {
+						...msg,
+						content: thinking + finalResponse
+					};
+				}
+				return msg;
+			}));
+
+			// Add current user message
+			const userMessage = { role: 'user' as const, content };
+			messages.push(userMessage);
+			store.addMessage(userMessage);
+			messageInput.value = '';
+			renderMessages(); // Render immediately to show user message
+
+			try {
+				thinkStartTime = Date.now();
+
+				const response = await sendMessage({
+					messages: messages,
+					temperature: store.temperature,
+					max_tokens: store.maxTokens,
+					functions: store.functions.length > 0 ? store.functions : undefined,
+					function_call: store.functions.length > 0 ? 'auto' : undefined
+				});
+
+				if (!response || !response.choices || !response.choices[0] || !response.choices[0].message) {
+					throw new Error('Invalid response format');
+				}
+
+				const assistantMessage = response.choices[0].message;
+				const thinkTime = ((Date.now() - thinkStartTime) / 1000).toFixed(2);
+				const rawContent = assistantMessage.content || '';
+				
+				// Store both raw content and display format separately
+				const thinkMatch = rawContent.match(/<think>(.*?)<\/think>/s);
+				const thinking = thinkMatch ? thinkMatch[1].trim() : '';
+				const finalResponse = rawContent.replace(/<think>.*?<\/think>/s, '').trim();
+
+				// Store the raw message in the history
+				const storedMessage = {
+					role: 'assistant' as const,
+					content: rawContent
+				};
+				store.addMessage(storedMessage);
+
+				// Only format for display in the render function
+				renderMessages(thinkTime);
+
+				// Handle function calls
+				if (assistantMessage.tool_calls?.length) {
+					const toolCall = assistantMessage.tool_calls[0];
+					const toolCallMessage = {
+						role: 'assistant' as const,
+						content: `Tool ${toolCall.function.name} would be called with arguments: ${toolCall.function.arguments}`
+					};
+					store.addMessage(toolCallMessage);
+				}
+
+				renderMessages();
+			} catch (error) {
+				console.error('Error sending message:', error);
+				const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+				store.addMessage({
+					role: 'assistant',
+					content: `Error: ${errorMessage}\n\nPlease try again or check the console for more details.`
+				});
+				renderMessages();
+			}
+		}
+
+		sendButton.addEventListener('click', handleSendMessage);
+
+		// Clear history
+		clearButton.addEventListener('click', () => {
+			useLLMStore.getState().clearHistory();
+			renderMessages();
+		});
+
+		// Add function
+		addFunctionButton.addEventListener('click', () => {
+			const functionForm = createFunctionForm();
+			if (!functionForm) return;
+
+			const closeForm = () => {
+				document.body.removeChild(functionForm);
+			};
+
+			document.getElementById('cancelFunctionBtn')?.addEventListener('click', closeForm);
+
+			document.getElementById('saveFunctionBtn')?.addEventListener('click', () => {
+				const name = (document.getElementById('functionName') as HTMLInputElement)?.value.trim();
+				const description = (document.getElementById('functionDescription') as HTMLTextAreaElement)?.value.trim();
+				const parametersStr = (document.getElementById('functionParameters') as HTMLTextAreaElement)?.value.trim();
+
+				if (!name || !description || !parametersStr) {
+					alert('All fields are required');
+					return;
+				}
+
+				try {
+					const parameters = JSON.parse(parametersStr);
+					useLLMStore.getState().addFunction({ name, description, parameters });
+					renderFunctions();
+					closeForm();
+				} catch (error) {
+					alert('Invalid JSON format for parameters');
+				}
+			});
+		});
+
+		// Render functions
+		function renderFunctions() {
+			const store = useLLMStore.getState();
+			functionsList.innerHTML = store.functions.map(func => `
+				<div class="glass rounded-lg p-3">
+					<div class="flex justify-between items-center">
+						<span class="font-semibold text-[var(--text-color)]">${func.name}</span>
+						<button class="text-[var(--text-color-muted)] hover:text-[var(--text-color)] transition-colors" onclick="removeFunction('${func.name}')">
+							Remove
+						</button>
+					</div>
+					<p class="text-sm mt-1 text-[var(--text-color-muted)]">${func.description}</p>
+				</div>
+			`).join('');
+		}
+
+		// Remove function
+		(window as any).removeFunction = (name: string) => {
+			useLLMStore.getState().removeFunction(name);
+			renderFunctions();
+		};
+
+		// Render messages
+		function renderMessages(currentThinkTime?: string) {
+			const store = useLLMStore.getState();
+			chatMessages.innerHTML = store.messages.map((msg, index) => {
+				// Check if this is an assistant message with thinking tags
+				if (msg.role === 'assistant' && msg.content && msg.content.includes('<think>')) {
+					const thinkMatch = msg.content.match(/<think>(.*?)<\/think>/s);
+					const thinking = thinkMatch ? thinkMatch[1].trim() : '';
+					const finalResponse = msg.content.replace(/<think>.*?<\/think>/s, '').trim();
+					
+					return `
+						<div class="glass rounded-lg p-3 mr-auto max-w-[80%]">
+							<div class="flex items-center gap-2 mb-2">
+								<span class="font-semibold text-[var(--text-color)]">${msg.role}</span>
+								${msg.name ? `<span class="text-sm text-[var(--text-color-muted)]">(${msg.name})</span>` : ''}
+							</div>
+							<div class="space-y-2">
+								${currentThinkTime ? `<div class="text-[var(--text-color-muted)] text-sm">Thinking Time: ${currentThinkTime}s</div>` : ''}
+								<div class="thinking-container">
+									<button class="thinking-toggle glass px-3 py-1 rounded-lg text-sm hover:bg-[var(--glass-bg)] transition-all duration-300" 
+											data-index="${index}">
+										Show Thinking Process
+									</button>
+									<div class="thinking-process hidden mt-2 p-2 rounded glass" style="background: var(--function-call-bg)">
+										<div class="text-sm text-[var(--text-color-muted)] mb-1">Thinking Process:</div>
+										<div class="text-[var(--text-color)] whitespace-pre-wrap">${thinking}</div>
+									</div>
+								</div>
+								<div class="mt-2 whitespace-pre-wrap text-[var(--text-color)]">${finalResponse}</div>
+							</div>
+						</div>
+					`;
+				}
+				
+				// Regular message rendering
+				return `
+					<div class="glass rounded-lg p-3 ${msg.role === 'user' ? 'ml-auto max-w-[80%]' : 'mr-auto max-w-[80%]'}">
+						<div class="flex items-center gap-2">
+							<span class="font-semibold text-[var(--text-color)]">${msg.role}</span>
+							${msg.name ? `<span class="text-sm text-[var(--text-color-muted)]">(${msg.name})</span>` : ''}
+						</div>
+						<div class="mt-1 whitespace-pre-wrap text-[var(--text-color)]">${msg.content || ''}</div>
+					</div>
+				`;
+			}).join('');
+			
+			// Add click handlers for thinking toggles
+			document.querySelectorAll('.thinking-toggle').forEach(button => {
+				button.addEventListener('click', (e) => {
+					const container = (e.target as HTMLElement).closest('.thinking-container');
+					if (!container) return;
+					
+					const process = container.querySelector('.thinking-process') as HTMLElement;
+					const button = container.querySelector('.thinking-toggle') as HTMLButtonElement;
+					
+					const isHidden = process.classList.contains('hidden');
+					process.classList.toggle('hidden');
+					button.textContent = isHidden ? 'Hide Thinking Process' : 'Show Thinking Process';
+				});
+			});
+			
+			chatMessages.scrollTop = chatMessages.scrollHeight;
+		}
+
+		// Handle Enter key in message input
+		messageInput.addEventListener('keypress', (e) => {
+			if (e.key === 'Enter' && !e.shiftKey) {
+				e.preventDefault();
+				handleSendMessage();
+			}
+		});
+
+		// Clear functions
+		document.getElementById('clearFunctions')?.addEventListener('click', () => {
+			if (store.functions.length === 0) return;
+			
+			if (confirm('Are you sure you want to clear all functions?')) {
+				useLLMStore.getState().clearFunctions();
+				renderFunctions();
+			}
+		});
+
+		// Initial render
+		renderMessages();
+		renderFunctions();
+	}
+
+	// Initialize when DOM is loaded
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', initializeApp);
+	} else {
+		initializeApp();
+	}
+</script>
+
+<style>
+	.container {
+		max-width: 1200px;
+		width: 100%;
+		padding: 1rem;
+	}
+
+	@media (max-width: 768px) {
+		.container {
+			padding: 0.5rem;
+		}
+		
+		.glass {
+			padding: 1rem !important;
+		}
+		
+		#chatMessages {
+			height: calc(100vh - 16rem) !important;
+		}
+	}
+
+	.glass.dark {
+		background: rgba(23, 25, 35, 0.6);
+		border: 1px solid rgba(255, 255, 255, 0.1);
+	}
+
+	.glass-input.dark {
+		background: rgba(15, 17, 25, 0.5);
+		border: 1px solid rgba(255, 255, 255, 0.1);
+	}
+
+	.glass-input.dark::placeholder {
+		color: rgba(255, 255, 255, 0.3);
+	}
+
+	#thinkToggle.active {
+		background: var(--function-call-bg);
+		color: var(--text-color);
+	}
+
+	#thinkToggle:not(.active) {
+		opacity: 0.7;
+	}
+
+	#thinkToggle:hover {
+		opacity: 1;
+	}
+</style>
+
+<!-- Theme Toggle -->
+<div class="fixed top-4 right-4 z-40">
+	<button
+		id="themeToggle"
+		class="glass rounded-lg px-4 py-2 transition-all duration-300 flex items-center gap-2 text-[var(--text-color)]"
+	>
+		<span class="theme-dark">🌙</span>
+		<span class="theme-light">☀️</span>
+		<span class="theme-text hidden sm:inline">Dark Mode</span>
+	</button>
+</div>

@@ -1,0 +1,20 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+  external_node_modules = ["@deepgram/sdk"]
+  included_files = []
+  [functions.chat]
+    timeout = 180
+  [functions.tts]
+    timeout = 180
+  [functions.transcribe]
+    timeout = 180 
