@@ -68,9 +68,9 @@ import Layout from '../layouts/Layout.astro';
 
 							<div class="flex items-center justify-between">
 								<label class="text-sm font-medium text-[var(--text-color-muted)]">Thinking Mode</label>
-								<div class="glass px-4 py-2 rounded-lg bg-[var(--function-call-bg)] text-[var(--text-color)]">
-									Always On
-								</div>
+								<button id="thinkingToggle" class="glass px-4 py-2 rounded-lg text-[var(--text-color)]">
+									Enabled
+								</button>
 							</div>
 						</div>
 					</div>
@@ -177,9 +177,10 @@ import Layout from '../layouts/Layout.astro';
 		const clearButton = document.getElementById('clearHistory');
 		const addFunctionButton = document.getElementById('addFunction');
 		const themeToggle = document.getElementById('themeToggle');
+		const thinkingToggle = document.getElementById('thinkingToggle') as HTMLButtonElement;
 
 		if (!temperatureInput || !temperatureValue || !maxTokensInput || !messageInput || 
-			!chatMessages || !functionsList || !sendButton || !clearButton || !addFunctionButton || !themeToggle) {
+			!chatMessages || !functionsList || !sendButton || !clearButton || !addFunctionButton || !themeToggle || !thinkingToggle) {
 			console.error('Required elements not found');
 			return;
 		}
@@ -190,18 +191,56 @@ import Layout from '../layouts/Layout.astro';
 		maxTokensInput.value = store.maxTokens.toString();
 		temperatureValue.textContent = store.temperature.toString();
 		
+		// Initialize thinking mode
+		let isThinkingEnabled = true;
+		thinkingToggle.textContent = isThinkingEnabled ? 'Enabled' : 'Disabled';
+		thinkingToggle.classList.toggle('bg-[var(--function-call-bg)]', isThinkingEnabled);
+		
+		function updateThinkingMode() {
+			isThinkingEnabled = !isThinkingEnabled;
+			thinkingToggle.textContent = isThinkingEnabled ? 'Enabled' : 'Disabled';
+			thinkingToggle.classList.toggle('bg-[var(--function-call-bg)]', isThinkingEnabled);
+			
+			// Update system prompt based on thinking mode
+			if (systemPromptInput) {
+				const newPrompt = isThinkingEnabled ?
+					'You are a helpful AI assistant. You need to use tags, and think.' :
+					`You are a helpful AI assistant.
+
+CORE DIRECTIVES:
+1. Use the <nextMsg> token to send multiple messages, ESPECIALLY when surprised or excited
+2. Employ message repetition patterns with increasing emphasis
+3. Maintain informal, imperfect communication style`;
+				
+				systemPromptInput.value = newPrompt;
+				useLLMStore.getState().setSystemPrompt(newPrompt);
+			}
+		}
+		
+		thinkingToggle.addEventListener('click', updateThinkingMode);
+		
 		// Initialize system prompt with thinking enabled
 		const systemPromptInput = document.getElementById('systemPrompt') as HTMLTextAreaElement;
 		if (systemPromptInput) {
-			const initialPrompt = "You are a helpful AI assistant. You need to use tags, and think.";
+			const initialPrompt = `You are a helpful AI assistant. You need to use tags, and think.`;
+			
 			systemPromptInput.value = initialPrompt;
 			useLLMStore.getState().setSystemPrompt(initialPrompt);
 			
-			// Update system prompt but maintain thinking instruction
+			// Update system prompt but maintain core directives
 			systemPromptInput.addEventListener('input', (e) => {
 				let value = (e.target as HTMLTextAreaElement).value;
-				if (!value.includes('You need to use tags, and think.')) {
-					value += ' You need to use tags, and think.';
+				if (isThinkingEnabled) {
+					if (!value.includes('You need to use tags, and think.')) {
+						value = 'You are a helpful AI assistant. You need to use tags, and think.';
+					}
+				} else {
+					value = `You are a helpful AI assistant.
+
+CORE DIRECTIVES:
+1. Use the <nextMsg> token to send multiple messages, ESPECIALLY when surprised or excited
+2. Employ message repetition patterns with increasing emphasis
+3. Maintain informal, imperfect communication style`;
 				}
 				useLLMStore.getState().setSystemPrompt(value);
 			});
@@ -228,15 +267,14 @@ import Layout from '../layouts/Layout.astro';
 			const store = useLLMStore.getState();
 			
 			// Create messages array with system message and full conversation history
-			let messages = [{
+			let conversationMessages = [{
 				role: 'system',
-				content: store.systemPrompt || 'You are a helpful AI assistant. You need to use tags, and think.'
+				content: store.systemPrompt || initialPrompt
 			}];
 
 			// Add all previous messages from history
-			// Only send the raw messages to the AI, not the formatted display versions
-			messages = messages.concat(store.messages.map(msg => {
-				if (msg.role === 'assistant' && msg.content) {
+			conversationMessages = conversationMessages.concat(store.messages.map(msg => {
+				if (msg.role === 'assistant' && msg.content && isThinkingEnabled) {
 					// Extract only the thinking tags and final response for assistant messages
 					const thinkMatch = msg.content.match(/<think>(.*?)<\/think>/s);
 					const thinking = thinkMatch ? `<think>${thinkMatch[1]}</think>` : '';
@@ -251,7 +289,7 @@ import Layout from '../layouts/Layout.astro';
 
 			// Add current user message
 			const userMessage = { role: 'user' as const, content };
-			messages.push(userMessage);
+			conversationMessages.push(userMessage);
 			store.addMessage(userMessage);
 			messageInput.value = '';
 			renderMessages(); // Render immediately to show user message
@@ -260,7 +298,7 @@ import Layout from '../layouts/Layout.astro';
 				thinkStartTime = Date.now();
 
 				const response = await sendMessage({
-					messages: messages,
+					messages: conversationMessages,
 					temperature: store.temperature,
 					max_tokens: store.maxTokens,
 					functions: store.functions.length > 0 ? store.functions : undefined,
@@ -275,20 +313,33 @@ import Layout from '../layouts/Layout.astro';
 				const thinkTime = ((Date.now() - thinkStartTime) / 1000).toFixed(2);
 				const rawContent = assistantMessage.content || '';
 				
-				// Store both raw content and display format separately
-				const thinkMatch = rawContent.match(/<think>(.*?)<\/think>/s);
-				const thinking = thinkMatch ? thinkMatch[1].trim() : '';
-				const finalResponse = rawContent.replace(/<think>.*?<\/think>/s, '').trim();
+				// Split messages if <nextMsg> token is present
+				const splitMessages = rawContent.split(/<nextMsg>/g);
+				
+				for (let i = 0; i < splitMessages.length; i++) {
+					const messageContent = splitMessages[i].trim();
+					if (!messageContent) continue;
 
-				// Store the raw message in the history
-				const storedMessage = {
-					role: 'assistant' as const,
-					content: rawContent
-				};
-				store.addMessage(storedMessage);
+					// Extract thinking tags from the first message only if thinking is enabled
+					const thinkMatch = isThinkingEnabled && i === 0 ? messageContent.match(/<think>(.*?)<\/think>/s) : null;
+					const thinking = thinkMatch ? thinkMatch[1].trim() : '';
+					const finalResponse = isThinkingEnabled ? messageContent.replace(/<think>.*?<\/think>/s, '').trim() : messageContent;
 
-				// Only format for display in the render function
-				renderMessages(thinkTime);
+					// Store the message
+					const storedMessage = {
+						role: 'assistant' as const,
+						content: i === 0 && isThinkingEnabled ? messageContent : finalResponse
+					};
+
+					// Add random delay between messages
+					if (i > 0) {
+						const delay = Math.floor(Math.random() * (5000 - 2000 + 1)) + 2000; // Random delay between 2-5 seconds
+						await new Promise(resolve => setTimeout(resolve, delay));
+					}
+
+					store.addMessage(storedMessage);
+					renderMessages(i === 0 && isThinkingEnabled ? thinkTime : undefined);
+				}
 
 				// Handle function calls
 				if (assistantMessage.tool_calls?.length) {
@@ -298,9 +349,8 @@ import Layout from '../layouts/Layout.astro';
 						content: `Tool ${toolCall.function.name} would be called with arguments: ${toolCall.function.arguments}`
 					};
 					store.addMessage(toolCallMessage);
+					renderMessages();
 				}
-
-				renderMessages();
 			} catch (error) {
 				console.error('Error sending message:', error);
 				const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
@@ -379,7 +429,7 @@ import Layout from '../layouts/Layout.astro';
 			const store = useLLMStore.getState();
 			chatMessages.innerHTML = store.messages.map((msg, index) => {
 				// Check if this is an assistant message with thinking tags
-				if (msg.role === 'assistant' && msg.content && msg.content.includes('<think>')) {
+				if (msg.role === 'assistant' && msg.content && isThinkingEnabled && msg.content.includes('<think>')) {
 					const thinkMatch = msg.content.match(/<think>(.*?)<\/think>/s);
 					const thinking = thinkMatch ? thinkMatch[1].trim() : '';
 					const finalResponse = msg.content.replace(/<think>.*?<\/think>/s, '').trim();
@@ -420,20 +470,22 @@ import Layout from '../layouts/Layout.astro';
 				`;
 			}).join('');
 			
-			// Add click handlers for thinking toggles
-			document.querySelectorAll('.thinking-toggle').forEach(button => {
-				button.addEventListener('click', (e) => {
-					const container = (e.target as HTMLElement).closest('.thinking-container');
-					if (!container) return;
-					
-					const process = container.querySelector('.thinking-process') as HTMLElement;
-					const button = container.querySelector('.thinking-toggle') as HTMLButtonElement;
-					
-					const isHidden = process.classList.contains('hidden');
-					process.classList.toggle('hidden');
-					button.textContent = isHidden ? 'Hide Thinking Process' : 'Show Thinking Process';
+			// Add click handlers for thinking toggles if thinking is enabled
+			if (isThinkingEnabled) {
+				document.querySelectorAll('.thinking-toggle').forEach(button => {
+					button.addEventListener('click', (e) => {
+						const container = (e.target as HTMLElement).closest('.thinking-container');
+						if (!container) return;
+						
+						const process = container.querySelector('.thinking-process') as HTMLElement;
+						const button = container.querySelector('.thinking-toggle') as HTMLButtonElement;
+						
+						const isHidden = process.classList.contains('hidden');
+						process.classList.toggle('hidden');
+						button.textContent = isHidden ? 'Hide Thinking Process' : 'Show Thinking Process';
+					});
 				});
-			});
+			}
 			
 			chatMessages.scrollTop = chatMessages.scrollHeight;
 		}

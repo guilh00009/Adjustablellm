@@ -3,7 +3,7 @@ import type { APIRoute } from 'astro';
 export const prerender = false;
 
 export const POST: APIRoute = async ({ request }) => {
-  const API_URL = 'https://ldryyaqtynx7ls-8000.proxy.runpod.net/v1/chat/completions';
+  const API_URL = 'https://v2346vrwyrzw7d-8000.proxy.runpod.net/v1/chat/completions';
 
   try {
     const body = await request.json();

@@ -11,7 +11,7 @@ export default defineConfig({
   adapter: netlify(),
   server: {
     host: true,
-    port: 3000,
+    port: 4321,
   },
   vite: {
     server: {

@@ -21,7 +21,7 @@ const handler: Handler = async (event) => {
   }
 
   try {
-    const API_URL = 'https://ldryyaqtynx7ls-8000.proxy.runpod.net/v1/chat/completions';
+    const API_URL = 'https://v2346vrwyrzw7d-8000.proxy.runpod.net/v1/chat/completions';
     
     if (!event.body) {
       throw new Error('Request body is empty');
