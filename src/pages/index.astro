@@ -313,8 +313,8 @@ CORE DIRECTIVES:
 				const thinkTime = ((Date.now() - thinkStartTime) / 1000).toFixed(2);
 				const rawContent = assistantMessage.content || '';
 				
-				// Split messages if <nextMsg> token is present
-				const splitMessages = rawContent.split(/<nextMsg>/g);
+				// Split messages if <nextMsg> token is present, but remove the closing tag
+				const splitMessages = rawContent.split(/<\/?nextMsg>/g).filter(Boolean);
 				
 				for (let i = 0; i < splitMessages.length; i++) {
 					const messageContent = splitMessages[i].trim();
