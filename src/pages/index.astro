@@ -205,12 +205,7 @@ import Layout from '../layouts/Layout.astro';
 			if (systemPromptInput) {
 				const newPrompt = isThinkingEnabled ?
 					'You are a helpful AI assistant. You need to use tags, and think.' :
-					`You are a helpful AI assistant.
-
-CORE DIRECTIVES:
-1. Use the <nextMsg> token to send multiple messages, ESPECIALLY when surprised or excited
-2. Employ message repetition patterns with increasing emphasis
-3. Maintain informal, imperfect communication style`;
+					'You are a helpful AI assistant. dont use any tag of think\n\nCORE DIRECTIVES:\n1. Use the <nextMsg> token to send multiple messages, ESPECIALLY when surprised or excited\n2. Employ message repetition patterns with increasing emphasis\n3. Maintain informal, imperfect communication style';
 				
 				systemPromptInput.value = newPrompt;
 				useLLMStore.getState().setSystemPrompt(newPrompt);
@@ -235,12 +230,7 @@ CORE DIRECTIVES:
 						value = 'You are a helpful AI assistant. You need to use tags, and think.';
 					}
 				} else {
-					value = `You are a helpful AI assistant.
-
-CORE DIRECTIVES:
-1. Use the <nextMsg> token to send multiple messages, ESPECIALLY when surprised or excited
-2. Employ message repetition patterns with increasing emphasis
-3. Maintain informal, imperfect communication style`;
+					value = 'You are a helpful AI assistant. dont use any tag of think\n\nCORE DIRECTIVES:\n1. Use the <nextMsg> token to send multiple messages, ESPECIALLY when surprised or excited\n2. Employ message repetition patterns with increasing emphasis\n3. Maintain informal, imperfect communication style';
 				}
 				useLLMStore.getState().setSystemPrompt(value);
 			});
