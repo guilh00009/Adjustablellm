@@ -437,9 +437,12 @@ CORE DIRECTIVES:
 
 			// Function to detect if content is code
 			function formatContent(content: string) {
+				// Remove reply and answer tags but keep their content
+				content = content.replace(/<(reply|answer)>(.*?)<\/(reply|answer)>/gs, '$2');
+
 				// If content contains HTML tags, treat it as code and wrap in pre/code
 				if (content.includes('<') && content.includes('>') && !content.includes('<think>')) {
-					return `<pre class="bg-[var(--glass-bg)] p-2 rounded-lg overflow-x-auto"><code>${escapeHtml(content)}</code></pre>`;
+					return `<pre class="bg-[var(--glass-bg)] p-2 rounded-lg overflow-x-auto max-w-[calc(100vw-4rem)] sm:max-w-[600px]"><code class="break-words whitespace-pre-wrap">${escapeHtml(content)}</code></pre>`;
 				}
 				return escapeHtml(content);
 			}
@@ -452,7 +455,7 @@ CORE DIRECTIVES:
 					const finalResponse = msg.content.replace(/<think>.*?<\/think>/s, '').trim();
 					
 					return `
-						<div class="glass rounded-lg p-3 mr-auto max-w-[80%]">
+						<div class="glass rounded-lg p-3 mr-auto max-w-[80%] break-words">
 							<div class="flex items-center gap-2 mb-2">
 								<span class="font-semibold text-[var(--text-color)]">${msg.role}</span>
 								${msg.name ? `<span class="text-sm text-[var(--text-color-muted)]">(${msg.name})</span>` : ''}
@@ -466,10 +469,10 @@ CORE DIRECTIVES:
 									</button>
 									<div class="thinking-process hidden mt-2 p-2 rounded glass" style="background: var(--function-call-bg)">
 										<div class="text-sm text-[var(--text-color-muted)] mb-1">Thinking Process:</div>
-										<div class="text-[var(--text-color)] whitespace-pre-wrap">${escapeHtml(thinking)}</div>
+										<div class="text-[var(--text-color)] whitespace-pre-wrap break-words">${escapeHtml(thinking)}</div>
 									</div>
 								</div>
-								<div class="mt-2 whitespace-pre-wrap text-[var(--text-color)]">${formatContent(finalResponse)}</div>
+								<div class="mt-2 whitespace-pre-wrap break-words">${formatContent(finalResponse)}</div>
 							</div>
 						</div>
 					`;
@@ -477,12 +480,12 @@ CORE DIRECTIVES:
 				
 				// Regular message rendering
 				return `
-					<div class="glass rounded-lg p-3 ${msg.role === 'user' ? 'ml-auto max-w-[80%]' : 'mr-auto max-w-[80%]'}">
+					<div class="glass rounded-lg p-3 ${msg.role === 'user' ? 'ml-auto' : 'mr-auto'} max-w-[80%] break-words">
 						<div class="flex items-center gap-2">
 							<span class="font-semibold text-[var(--text-color)]">${msg.role}</span>
 							${msg.name ? `<span class="text-sm text-[var(--text-color-muted)]">(${msg.name})</span>` : ''}
 						</div>
-						<div class="mt-1 whitespace-pre-wrap text-[var(--text-color)]">${formatContent(msg.content || '')}</div>
+						<div class="mt-1 whitespace-pre-wrap break-words">${formatContent(msg.content || '')}</div>
 					</div>
 				`;
 			}).join('');
