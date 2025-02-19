@@ -427,6 +427,23 @@ CORE DIRECTIVES:
 		// Render messages
 		function renderMessages(currentThinkTime?: string) {
 			const store = useLLMStore.getState();
+
+			// Function to escape HTML
+			function escapeHtml(text: string) {
+				const div = document.createElement('div');
+				div.textContent = text;
+				return div.innerHTML;
+			}
+
+			// Function to detect if content is code
+			function formatContent(content: string) {
+				// If content contains HTML tags, treat it as code and wrap in pre/code
+				if (content.includes('<') && content.includes('>') && !content.includes('<think>')) {
+					return `<pre class="bg-[var(--glass-bg)] p-2 rounded-lg overflow-x-auto"><code>${escapeHtml(content)}</code></pre>`;
+				}
+				return escapeHtml(content);
+			}
+
 			chatMessages.innerHTML = store.messages.map((msg, index) => {
 				// Check if this is an assistant message with thinking tags
 				if (msg.role === 'assistant' && msg.content && isThinkingEnabled && msg.content.includes('<think>')) {
@@ -449,10 +466,10 @@ CORE DIRECTIVES:
 									</button>
 									<div class="thinking-process hidden mt-2 p-2 rounded glass" style="background: var(--function-call-bg)">
 										<div class="text-sm text-[var(--text-color-muted)] mb-1">Thinking Process:</div>
-										<div class="text-[var(--text-color)] whitespace-pre-wrap">${thinking}</div>
+										<div class="text-[var(--text-color)] whitespace-pre-wrap">${escapeHtml(thinking)}</div>
 									</div>
 								</div>
-								<div class="mt-2 whitespace-pre-wrap text-[var(--text-color)]">${finalResponse}</div>
+								<div class="mt-2 whitespace-pre-wrap text-[var(--text-color)]">${formatContent(finalResponse)}</div>
 							</div>
 						</div>
 					`;
@@ -465,7 +482,7 @@ CORE DIRECTIVES:
 							<span class="font-semibold text-[var(--text-color)]">${msg.role}</span>
 							${msg.name ? `<span class="text-sm text-[var(--text-color-muted)]">(${msg.name})</span>` : ''}
 						</div>
-						<div class="mt-1 whitespace-pre-wrap text-[var(--text-color)]">${msg.content || ''}</div>
+						<div class="mt-1 whitespace-pre-wrap text-[var(--text-color)]">${formatContent(msg.content || '')}</div>
 					</div>
 				`;
 			}).join('');
